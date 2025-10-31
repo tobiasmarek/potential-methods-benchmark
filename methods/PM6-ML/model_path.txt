@@ -1,0 +1,1 @@
+/home/tobiasma/bin/mopac-ml/models/PM6-ML_correction_seed8_best.ckpt

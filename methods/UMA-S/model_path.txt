@@ -1,0 +1,1 @@
+/home/tobiasma/bin/cuby4/interfaces/fairchem/models/uma-s-1p1.pt

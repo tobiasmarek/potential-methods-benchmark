@@ -1,0 +1,8 @@
+# conda activate fairchem
+job: dataset
+dataset: ${DATASET}
+#cuby_threads: 8
+
+interface: fairchem
+method: fairchem
+fairchem_model: ${MODEL_PATH}

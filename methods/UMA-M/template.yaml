@@ -1,0 +1,7 @@
+# conda activate fairchem
+job: dataset
+dataset: ${DATASET}
+
+interface: fairchem
+method: fairchem
+fairchem_model: ${MODEL_PATH}

@@ -1,0 +1,22 @@
+# Ignore temporary YAMLs
+tmp_*.yaml
+
+# Ignore logs
+logs/
+*.log
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore virtual environments
+.env/
+venv/
+*.conda-env
+
+# Ignore editor or OS files
+.DS_Store
+Thumbs.db
+
+# Keep placeholder files
+!.gitkeep

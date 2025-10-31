@@ -1,0 +1,17 @@
+# conda activate pm6-ml
+job: dataset
+dataset: ${DATASET}
+
+interface: mopac
+method: pm6
+modifiers: torchmdnet, dispersion3
+modifier_torchmdnet:
+  torchmd_model: ${MODEL_PATH}
+modifier_dispersion3:
+  d3_hh_fix: no
+  d3_damping: bj
+  d3_s6: 1.0
+  d3_s8: 0.3908
+  d3_a1: 0.566
+  d3_a2: 3.128
+  d3_3body: yes
