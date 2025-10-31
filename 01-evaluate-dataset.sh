@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 -n DATASET -m METHOD1 [METHOD2 ...]"
-  echo "Example: $0 -n PLA15 -m PM6-ML PM7-ML"
+  echo "Example: $0 -n PLA15 -m PM6-ML UMA-S"
   exit 1
 }
 
@@ -36,50 +36,79 @@ fi
 
 # --- Loop through each method ---
 for METHOD in "${METHODS[@]}"; do
-  echo "----------------------------------------"
+  echo "============================================================"
   echo " Evaluating dataset: $DATASET with method: $METHOD"
-  echo "----------------------------------------"
+  echo "------------------------------------------------------------"
 
   METHOD_DIR="methods/$METHOD"
   TEMPLATE="$METHOD_DIR/template.yaml"
   MODEL_FILE="$METHOD_DIR/model_path.txt"
 
-  if [[ ! -f "$TEMPLATE" || ! -f "$MODEL_FILE" ]]; then
-    echo "❌ Missing files in $METHOD_DIR (need template.yaml and model)"
-    exit 1
-  fi
+  RESULT_DIR="results/$METHOD"
+  mkdir -p "$RESULT_DIR"
+  LOG_FILE="$RESULT_DIR/cuby.log"
 
-  export DATASET
-  export MODEL_PATH
-  MODEL_PATH=$(cat "$MODEL_FILE")
+  {
+    # Temporarily disable exit-on-error to handle failures manually
+    set +e
 
-  # --- Extract conda environment name ---
-  ENV_NAME=$(head -n 1 "$TEMPLATE" | awk '{print $4}')
-  if [[ -z "$ENV_NAME" ]]; then
-    echo "❌ Could not find environment name in first line of $TEMPLATE"
-    exit 1
-  fi
+    if [[ ! -f "$TEMPLATE" || ! -f "$MODEL_FILE" ]]; then
+      echo "🔺 Missing files in $METHOD_DIR (need template.yaml and model)"
+      exit 1
+    fi
 
-  echo "🔹 Activating environment: $ENV_NAME"
+    export DATASET
+    MODEL_PATH=$(cat "$MODEL_FILE")
+    export MODEL_PATH
 
-  # --- Activate environment ---
-  source "$(conda info --base)/etc/profile.d/conda.sh"
-  conda activate "$ENV_NAME"
+    ENV_NAME=$(head -n 1 "$TEMPLATE" | awk '{print $4}')
+    if [[ -z "$ENV_NAME" ]]; then
+      echo "🔺 Could not find environment name in first line of $TEMPLATE"
+      exit 1
+    fi
 
-  # --- Substitute placeholders ---
-  TMP_YAML="tmp_${METHOD}.yaml"
-  envsubst < "$TEMPLATE" > "$TMP_YAML"
+    echo "🔹 Activating environment: $ENV_NAME"
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    conda activate "$ENV_NAME"
 
-  # --- Run cuby4 ---
-  echo "Running Cuby4 in environment '$ENV_NAME'..."
-  cuby4 "$TMP_YAML"
+    TMP_YAML="tmp_${METHOD}.yaml"
+    envsubst < "$TEMPLATE" > "$TMP_YAML"
 
-  # --- Cleanup ---
-  rm "$TMP_YAML"
-  conda deactivate
-  unset DATASET MODEL_PATH
-  echo "✅ Finished method: $METHOD"
-  echo
+    echo "🔹 Logging output to $LOG_FILE"
+    echo "Running Cuby4 in environment '$ENV_NAME'..."
+
+    cuby4 "$TMP_YAML" > "$LOG_FILE" 2>&1
+    STATUS=$?
+
+    if [[ $STATUS -ne 0 ]]; then
+      echo "Cuby4 failed for $METHOD (exit code $STATUS)" >> "$LOG_FILE"
+      echo "🔺 Failed method: $METHOD — log saved to $LOG_FILE"
+      conda deactivate
+      unset MODEL_PATH
+      rm -f "$TMP_YAML"
+      continue
+    fi
+
+    echo "🔹 Extracting energies..."
+    ./utils/extract_energies.sh "$LOG_FILE" > "$RESULT_DIR/table.txt"
+
+    rm "$TMP_YAML"
+    conda deactivate
+    unset MODEL_PATH
+
+    echo "✅ Finished method: $METHOD — log saved to $LOG_FILE"
+    echo
+
+    # Re-enable exit-on-error
+    set -e
+  } || {
+    echo "❌ Failed method: $METHOD — log saved to $LOG_FILE"
+    echo
+    continue
+  }
 done
 
-echo "🎉 All methods complete for dataset: $DATASET"
+echo "============================================================"
+echo " ⏵ Pipeline finished for dataset: $DATASET"
+
+unset DATASET
