@@ -5,6 +5,9 @@ tmp_*.yaml
 logs/
 *.log
 
+# Do not ignore cuby logs
+!cuby.log
+
 # Ignore Python cache files
 __pycache__/
 *.pyc
