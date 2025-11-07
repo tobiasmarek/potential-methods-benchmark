@@ -52,14 +52,22 @@ for METHOD in "${METHODS[@]}"; do
     # Temporarily disable exit-on-error to handle failures manually
     set +e
 
-    if [[ ! -f "$TEMPLATE" || ! -f "$MODEL_FILE" ]]; then
-      echo "🔺 Missing files in $METHOD_DIR (need template.yaml and model)"
+    # --- template.yaml is always required ---
+    if [[ ! -f "$TEMPLATE" ]]; then
+      echo "🔺 Missing template.yaml in $METHOD_DIR"
       exit 1
     fi
 
+    # --- model_path.txt is optional ---
+    if [[ -f "$MODEL_FILE" ]]; then
+      MODEL_PATH=$(cat "$MODEL_FILE")
+      export MODEL_PATH
+      echo "🔹 Using model: $MODEL_PATH"
+    else
+      echo "🔹 Model path not set"
+    fi
+
     export DATASET
-    MODEL_PATH=$(cat "$MODEL_FILE")
-    export MODEL_PATH
 
     ENV_NAME=$(head -n 1 "$TEMPLATE" | awk '{print $4}')
     if [[ -z "$ENV_NAME" ]]; then
