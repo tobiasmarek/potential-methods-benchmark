@@ -44,7 +44,7 @@ for METHOD in "${METHODS[@]}"; do
   TEMPLATE="$METHOD_DIR/template.yaml"
   MODEL_FILE="$METHOD_DIR/model_path.txt"
 
-  RESULT_DIR="results/$METHOD"
+  RESULT_DIR="results/$DATASET/$METHOD"
   mkdir -p "$RESULT_DIR"
   LOG_FILE="$RESULT_DIR/cuby.log"
 
